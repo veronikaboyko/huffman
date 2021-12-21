@@ -1,74 +1,120 @@
-let fs = require('fs');//переменная fs-работа с файловой системой
-let inputData = fs.readFileSync('input.txt').toString();
-console.log(inputData);
-let i = 0, j = 0;
+let fs = require('fs');
+let arg = process.argv;
+let inputData = fs.readFileSync(arg[2], 'utf8');
+console.log('input string: ' + inputData)
 
-function Node(letter, freq, used, father, code) {
-    this.letter = letter
-    this.freq = freq;
+function Node(letter, freq, used, parent, code){
+	this.letter = letter;
+	this.freq = freq;
 	this.used = used;
-    this.father = father;
-    this.code = code;
+	this.parent = parent;
+	this.code = code;
+
 }
+
+function power(alph) {
+    for (let i = 0; i < alph.length - 1; i++) {
+        if (alph[i] != alph[i + 1]) 
+            return false;
+    }   
+    return true;
+}
+
 let alph = new Array();
 let tree = new Array();
-for (i = 0; i < inputData.length; i++) {
-    alph[inputData.charAt(i)] = 0;
+let codes = new Array();
+
+let codedString = '';
+let decodedString = '';
+let flag = power(inputData);
+
+if (flag){
+	for (i = 0; i < inputData.length; i++) 
+        codedString += "0";
+        
+    codes = `${inputData[0]}: '0'`
+    for (i = 0; i < inputData.length; i++) 
+        decodedString += inputData[0];
+	console.log(codes);
+	console.log('coded string: ' + codedString);
+	console.log('decoded string: ' + decodedString);
 }
-for (i = 0; i < inputData.length; i++) {
-    alph[inputData.charAt(i)]++;
-}
-for (i in alph) {
-    let n = new Node(i, alph[i], false, null, '');
-    tree.push(n);
-}
-let lenTree = tree.length;
-for (i = 0; i < lenTree - 1; i++) {
-    let index1, index2;
-    let min1 = inputData.length;
-	let min2 = inputData.length;
-    for (j = 0; j < tree.length; j++) {
-        if (min1 > tree[j].freq && !tree[j].used) {
-            min1 = tree[j].freq;
-            index1 = j;
-        }
-    }
-    tree[index1].code = '0';
-    tree[index1].used = true;
-    tree[index1].father = tree.length;
-    for (j = 0; j < tree.length; j++) {
-        if (min2 > tree[j].freq && !tree[j].used) {
-            min2 = tree[j].freq;
-            index2 = j;
-        }
-    }
-    tree[index2].code = '1';
-    tree[index2].used = true;
-    tree[index2].father = tree.length;
-    let N = new Node(tree[index1].letter + tree[index2].letter,
-					 tree[index1].freq + tree[index2].freq,
-					 false, null, '');
-    tree.push(N);
-}
-let codes = [];
-for (i = 0; i < lenTree; i++) {
-    let index3 = i;
-    codes[tree[index3].letter] = '';
-    while (tree[index3].father != null) {
-        codes[tree[i].letter] = tree[index3].code + codes[tree[i].letter];
-        index3 = tree[index3].father;
-    }
-}
-console.log(codes);
-let outputData = '';
-for (i = 0; i < lenTree; i++) {
-    let x = inputData[i];
-    outputData += codes[x];
-}
-fs.writeFile('output.txt', outputData, (err) => {
-		if (err){
-			console.err(err);
-			return;
+
+else{ 
+
+	let  powerAlph = 0;
+
+	for (i = 0; i < inputData.length; i++)
+		alph[inputData.charAt(i)] = 0;
+
+	for (i = 0; i < inputData.length; i++)
+		alph[inputData.charAt(i)]++;
+
+	for (i in alph) {
+		let n = new Node(i, alph[i], false, null, '');
+		tree.push(n);
+		powerAlph++;
+	}
+
+	let t = 0;
+	while (tree[tree.length - 1].freq != inputData.length) {
+		let min1 = inputData.length + 1, min2 = inputData.length + 1;
+		let index1 = 0, index2 = 0;
+		for (let i = 0; i < tree.length; i++) {
+			if (tree[i].freq < min1 && tree[i].used == false) {
+				min2 = min1
+				min1 = tree[i].freq
+				index2 = index1
+				index1 = i
+			} 
+			else if (tree[i].freq < min2 && tree[i].used == false) {
+				min2 = tree[i].freq;
+				index2 = i;
+			}
 		}
-	});
-console.log(outputData);
+		let n = new Node(tree[index1].letter + tree[index2].letter,
+                    tree[index1].freq + tree[index2].freq,
+                    false,
+                    null,
+                    '');
+		tree.push(n);
+		tree[index1].used = true;
+		tree[index2].used = true;
+		tree[index1].parent = tree.length - 1
+		tree[index2].parent = tree.length - 1
+		t++
+	}	
+
+	let n = 0
+	let currentCode = 0
+	for (i = 0; i < t; i++) {
+		for (let j = 0; j < tree.length; j++) {
+			if (tree[j].parent == tree.length - i - 1){
+				currentCode = n % 2
+				tree[j].code += tree[tree[j].parent].code + currentCode.toString()
+				n++
+			}
+
+		}
+	}
+
+	for (i = 0; i < powerAlph; i++)
+		codes[tree[i].letter] = tree[i].code;
+	console.log(codes);
+
+	let codedData = new Array();
+	for (i in inputData)
+		codedData[i] = codes[inputData.charAt(i)]
+	
+	for (i = 0; i < codedData.length; i ++)
+		codedString += codedData[i];
+	console.log('coded string: ' + codedString)
+
+	for (i in codedData){
+		for (let j = 0; j < tree.length; j++) {
+			if (tree[j].code === codedData[i])
+				decodedString += tree[j].letter
+		}
+	}
+	console.log('decoded string: ' + decodedString)
+}
